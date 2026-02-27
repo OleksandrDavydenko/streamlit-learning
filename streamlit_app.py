@@ -273,7 +273,7 @@ with st.sidebar:
 
     # ── Стаття витрат (Type_of_expense) ──────────────────────
     st.markdown('<div class="sidebar-section-label">📌 Стаття витрат</div>', unsafe_allow_html=True)
-    search_expense = st.text_input("", placeholder="🔍 Пошук", key="expense_search",
+    search_expense = st.text_input("Пошук статті витрат", placeholder="🔍 Пошук", key="expense_search",
                                    label_visibility="collapsed")
     all_expenses = sorted(df_raw["Type_of_expense"].dropna().unique().tolist())
     filtered_expenses_list = (
@@ -598,7 +598,7 @@ with tab_dept:
             yaxis=dict(autorange="reversed", title=""),
             plot_bgcolor="white", paper_bgcolor="white",
         )
-        st.plotly_chart(fig_dbar, use_container_width=True)
+        st.plotly_chart(fig_dbar, width='stretch')
 
     with col_pie2:
         fig_dp = px.pie(
@@ -618,7 +618,7 @@ with tab_dept:
                 font=dict(size=14, color="#1a5276", family="Segoe UI"),
             )],
         )
-        st.plotly_chart(fig_dp, use_container_width=True)
+        st.plotly_chart(fig_dp, width='stretch')
 
     st.markdown("#### 📋 Деталізація по відділах")
     dept_detail = (
@@ -636,7 +636,7 @@ with tab_dept:
             "Department": "🏢 Відділ",
             "Parent_Description": "📌 Категорія",
         })[["🏢 Відділ", "📌 Категорія", "Сума, $", "Частка"]],
-        use_container_width=True, hide_index=True, height=350,
+        width='stretch', hide_index=True, height=350,
     )
 
 # ─────── TAB 2: ДИНАМІКА ─────────────────────────────────
@@ -677,7 +677,7 @@ with tab_trends:
         xaxis=dict(title="", gridcolor="#eef2f7"),
         plot_bgcolor="white", paper_bgcolor="white", hovermode="x unified",
     )
-    st.plotly_chart(fig_line, use_container_width=True)
+    st.plotly_chart(fig_line, width='stretch')
 
     # Теплова карта
     st.markdown("#### 🌡️ Теплова карта витрат по місяцях та роках")
@@ -700,7 +700,7 @@ with tab_trends:
         xaxis_title="", yaxis_title="", coloraxis_showscale=False,
     )
     fig_heat.update_traces(textfont_size=10)
-    st.plotly_chart(fig_heat, use_container_width=True)
+    st.plotly_chart(fig_heat, width='stretch')
 
 # ─────── TAB 3: ТОП ──────────────────────────────────────
 with tab_top:
@@ -728,7 +728,7 @@ with tab_top:
         yaxis=dict(title=""),
         plot_bgcolor="white", paper_bgcolor="white",
     )
-    st.plotly_chart(fig_top, use_container_width=True)
+    st.plotly_chart(fig_top, width='stretch')
 
 # ── Футер ─────────────────────────────────────────────────
 st.markdown(

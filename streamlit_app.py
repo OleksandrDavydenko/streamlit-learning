@@ -446,7 +446,7 @@ with tab_expenses:
             pivot_child["Всього"] = pivot_child["Sum"]
 
         extra_ths = "".join(
-            f'<th style="text-align:right;min-width:110px;white-space:nowrap">{dt}</th>'
+            f'<th class="dist-col" style="text-align:right;min-width:110px;white-space:nowrap">{dt}</th>'
             for dt in dist_types
         )
 
@@ -455,7 +455,7 @@ with tab_expenses:
             pname  = p_row.Parent_Description
             psum   = p_row.Sum
             grp_id = f"grp{idx}"
-            empty_tds = "".join('<td></td>' for _ in dist_types)
+            empty_tds = "".join('<td class="dist-col"></td>' for _ in dist_types)
             rows_html += (
                 f'<tr class="parent-row" onclick="toggleGroup(\'{grp_id}\')" style="cursor:pointer;">'
                 f'<td><span class="toggle" id="btn_{grp_id}">&#8853;</span> {pname}</td>'
@@ -465,8 +465,8 @@ with tab_expenses:
             children = pivot_child[pivot_child["Parent_Description"] == pname]
             for _, c_row in children.sort_values("Всього", ascending=False).iterrows():
                 child_dist_tds = "".join(
-                    f'<td>{c_row[dt]:,.2f}</td>' if c_row[dt] != 0
-                    else '<td style="color:#ccc">—</td>'
+                    f'<td class="dist-col">{c_row[dt]:,.2f}</td>' if c_row[dt] != 0
+                    else '<td class="dist-col" style="color:#ccc">—</td>'
                     for dt in dist_types
                 )
                 rows_html += (
@@ -479,7 +479,7 @@ with tab_expenses:
         if dist_types:
             tot_by_dist = filtered_df.groupby("DistributionBase")["Sum"].sum()
             total_dist_tds = "".join(
-                f'<td>{tot_by_dist.get(dt, 0):,.2f}</td>' for dt in dist_types
+                f'<td class="dist-col">{tot_by_dist.get(dt, 0):,.2f}</td>' for dt in dist_types
             )
         else:
             total_dist_tds = ""
@@ -514,6 +514,7 @@ with tab_expenses:
         .toggle {{ display:inline-block; width:16px; font-weight:900; font-size:14px;
                    color:#1a5276; user-select:none; transition:transform .15s; }}
         .scroll-wrap {{ overflow-x:auto; }}
+        @media (max-width: 768px) {{ .dist-col {{ display:none !important; }} }}
         </style>
         <div class="wrap"><div class="scroll-wrap">
         <table>

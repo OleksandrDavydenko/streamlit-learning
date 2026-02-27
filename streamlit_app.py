@@ -35,7 +35,15 @@ def check_password():
             submitted = st.form_submit_button("🔓 Увійти", use_container_width=True)
         
         if submitted:
-            if password == st.secrets.get("password"):
+            # Нормалізуємо типи та обрізаємо пробіли, щоб уникнути невірних порівнянь
+            stored_password = st.secrets.get("password", "")
+            if stored_password is None:
+                stored_password = ""
+            # Приводимо до рядка та обрізаємо пробіли
+            stored_password = str(stored_password).strip()
+            entered = "" if password is None else str(password).strip()
+
+            if entered != "" and entered == stored_password:
                 st.session_state.password_correct = True
                 st.rerun()
             else:

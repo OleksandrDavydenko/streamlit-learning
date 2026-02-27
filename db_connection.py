@@ -1,5 +1,5 @@
 import os
-import pyodbc
+import pymssql
 import pandas as pd
 from datetime import datetime
 
@@ -28,12 +28,12 @@ def get_connection():
         raise RuntimeError("Missing database connection settings. Set SERVER, DATABASE, USERNAME and PASSWORD in secrets or environment variables.")
 
     try:
-        conn = pyodbc.connect(
-            f'DRIVER={{ODBC Driver 17 for SQL Server}};'
-            f'SERVER={SERVER};'
-            f'DATABASE={DATABASE};'
-            f'UID={USERNAME};'
-            f'PWD={PASSWORD}'
+        conn = pymssql.connect(
+            server=SERVER,
+            user=USERNAME,
+            password=PASSWORD,
+            database=DATABASE,
+            charset='UTF-8'
         )
         return conn
     except Exception as e:

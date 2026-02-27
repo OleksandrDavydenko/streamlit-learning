@@ -79,12 +79,15 @@ st.markdown("""
 /* ── KPI columns: stack on very small screens ── */
 @media (max-width: 640px) {
     .header-banner {
-        flex-direction: column; align-items: flex-start; gap:12px;
-        padding: 16px 18px;
+        flex-direction: column; align-items: flex-start; gap:8px;
+        padding: 12px 14px;
     }
+    .header-left { gap:10px; }
     .header-right { text-align:left; }
-    .header-title { font-size:18px; }
-    .header-logo-circle { width:44px; height:44px; font-size:13px; }
+    .header-title { font-size:15px; }
+    .header-subtitle { font-size:10px; overflow-wrap:break-word; word-break:break-word; }
+    .header-logo-circle { width:36px; height:36px; font-size:11px; }
+    .header-badge { font-size:11px; padding:3px 10px; }
     .kpi-value, .kpi-value-neg { font-size:20px; }
     /* Streamlit column gap reduction */
     [data-testid="column"] { padding: 0 4px !important; }
@@ -533,13 +536,18 @@ with tab_expenses:
             r.style.display = anyVisible ? 'none' : 'table-row';
           }});
           if (btn) btn.innerHTML = anyVisible ? '&#8853;' : '&#8854;';
-          var h = document.body.scrollHeight;
-          window.frameElement && (window.frameElement.style.height = h + 'px');
+          resize();
         }}
+        function resize() {{
+          var h = document.body.scrollHeight;
+          if (window.frameElement) window.frameElement.style.height = h + 'px';
+        }}
+        document.addEventListener('DOMContentLoaded', resize);
         </script>
         """
-        total_rows = len(parent_grp) + len(pivot_child) + 2
-        tbl_height = total_rows * 34 + 60
+        # Only parent rows + total row are visible initially (children are collapsed)
+        visible_rows = len(parent_grp) + 2
+        tbl_height = visible_rows * 34 + 60
         components.html(table_html, height=tbl_height, scrolling=False)
 
 # ─────── TAB 1: ПО ВІДДІЛАХ ──────────────────────────────

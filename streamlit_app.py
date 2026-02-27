@@ -79,14 +79,15 @@ st.markdown("""
 /* ── KPI columns: stack on very small screens ── */
 @media (max-width: 640px) {
     .header-banner {
-        flex-direction: column; align-items: flex-start; gap:8px;
+        flex-direction: column; align-items: flex-start; gap:6px;
         padding: 12px 14px;
     }
-    .header-left { gap:10px; }
-    .header-right { text-align:left; }
-    .header-title { font-size:15px; }
-    .header-subtitle { font-size:10px; overflow-wrap:break-word; word-break:break-word; }
-    .header-logo-circle { width:36px; height:36px; font-size:11px; }
+    .header-left { gap:10px; width:100%; min-width:0; }
+    .header-left > div:last-child { min-width:0; flex:1 1 auto; overflow:visible; }
+    .header-logo-circle { display:none; }
+    .header-right { text-align:left; width:100%; }
+    .header-title { font-size:17px; white-space:normal; word-break:break-word; }
+    .header-subtitle { font-size:11px; overflow-wrap:break-word; word-break:break-word; white-space:normal; }
     .header-badge { font-size:11px; padding:3px 10px; }
     .kpi-value, .kpi-value-neg { font-size:20px; }
     /* Streamlit column gap reduction */

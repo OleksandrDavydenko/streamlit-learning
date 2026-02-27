@@ -163,8 +163,8 @@ def check_password() -> bool:
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         st.markdown(
-            
-            "<p style='text-align:center;color:gray'>Введіть пароль для входу</p>",
+            "<h1 style='text-align:center'>🔐 Звіт</h1>"
+            "<p style='text-align:center;color:#555;'>Введіть пароль для доступу до звіту</p>",
             unsafe_allow_html=True,
         )
         st.write("")

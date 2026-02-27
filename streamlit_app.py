@@ -14,7 +14,7 @@ st.set_page_config(
     page_title="Операційні витрати | FTP",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 UA_MONTHS = {
@@ -45,17 +45,6 @@ st.markdown("""
 .kpi-label { font-size:11px; color:#888; line-height:1.3; min-height:30px; }
 .kpi-value { font-size:26px; font-weight:900; color:#111; line-height:1.2; margin-top:4px; }
 .kpi-value-neg { font-size:26px; font-weight:900; color:#e63946; line-height:1.2; margin-top:4px; }
-.cat-table-wrap table { width:100%; border-collapse:collapse; font-size:13px; }
-.cat-table-wrap th { background-color:#1a5276; color:white; padding:7px 10px;
-    text-align:left; font-weight:700; }
-.cat-table-wrap th:last-child { text-align:right; }
-.cat-table-wrap td { padding:5px 10px; border-bottom:1px solid #e8edf2; }
-.cat-table-wrap td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
-.cat-table-wrap tr.parent-row { background-color:#d6e4f7; font-weight:700; }
-.cat-table-wrap tr.child-row  { background-color:#ffffff; color:#444; }
-.cat-table-wrap tr.child-row td:first-child { padding-left:28px; }
-.cat-table-wrap tr.total-row  { background-color:#eef2f7; font-weight:700;
-    border-top:2px solid #1a5276; font-size:14px; }
 /* ── Header Banner ── */
 .header-banner {
     background: linear-gradient(135deg, #0a2342 0%, #1a5276 60%, #0055a4 100%);
@@ -79,13 +68,40 @@ st.markdown("""
     border:1px solid rgba(255,255,255,0.3); border-radius:20px;
     padding:4px 14px; color:white; font-size:12px; font-weight:700; margin-top:6px;
 }
-[data-testid="stTabs"] [data-baseweb="tab-list"] { gap:4px; border-bottom:2px solid #dde3ea; }
+[data-testid="stTabs"] [data-baseweb="tab-list"] { gap:4px; border-bottom:2px solid #dde3ea; flex-wrap:wrap; }
 [data-testid="stTabs"] [data-baseweb="tab"] {
     background:#f0f4f8; border-radius:8px 8px 0 0; padding:8px 18px;
     font-weight:600; color:#555; border:1px solid #dde3ea; border-bottom:none;
 }
 [data-testid="stTabs"] [aria-selected="true"] {
     background:white !important; color:#1a5276 !important; border-bottom:2px solid white;
+}
+/* ── KPI columns: stack on very small screens ── */
+@media (max-width: 640px) {
+    .header-banner {
+        flex-direction: column; align-items: flex-start; gap:12px;
+        padding: 16px 18px;
+    }
+    .header-right { text-align:left; }
+    .header-title { font-size:18px; }
+    .header-logo-circle { width:44px; height:44px; font-size:13px; }
+    .kpi-value, .kpi-value-neg { font-size:20px; }
+    /* Streamlit column gap reduction */
+    [data-testid="column"] { padding: 0 4px !important; }
+    /* Reduce main padding */
+    .block-container { padding-left:12px !important; padding-right:12px !important; padding-top:12px !important; }
+    [data-testid="stTabs"] [data-baseweb="tab"] { padding:6px 10px; font-size:12px; }
+}
+/* ── Tablet ── */
+@media (max-width: 900px) {
+    .header-title { font-size:20px; }
+    .header-subtitle { font-size:11px; }
+    [data-testid="stTabs"] [data-baseweb="tab"] { padding:7px 12px; font-size:13px; }
+}
+/* ── Collapse sidebar padding on mobile ── */
+@media (max-width: 768px) {
+    section[data-testid="stSidebar"] { min-width: 80vw !important; }
+    .block-container { padding-left:10px !important; padding-right:10px !important; }
 }
 </style>
 """, unsafe_allow_html=True)

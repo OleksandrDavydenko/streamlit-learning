@@ -43,6 +43,14 @@ def check_password():
             stored_password = str(stored_password).strip()
             entered = "" if password is None else str(password).strip()
 
+            # --- ДІАГНОСТИКА (БЕЗПЕЧНА) ---
+            # Не показує реальний пароль, тільки тип та довжину
+            if st.checkbox("Показати діагностику секрету (не показує пароль)"):
+                try:
+                    st.info(f"secret type: {type(stored_password).__name__}, length: {len(stored_password)}")
+                except Exception:
+                    st.info("secret не доступний або має невідомий тип")
+
             if entered != "" and entered == stored_password:
                 st.session_state.password_correct = True
                 st.rerun()

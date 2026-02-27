@@ -318,34 +318,46 @@ st.markdown(f"""
 # ============================================================
 st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 tab_expenses, tab_dept, tab_trends, tab_top = st.tabs([
-    "📊  Аналіз витрат",
-    "🏢  Аналіз по відділах",
-    "📈  Динаміка по роках",
-    "🔥  ТОП витрат",
+    "📊  Витрати",
+    "🏢  По відділах",
+    "📈  Динаміка",
+    "🔥  ТОП",
 ])
 
 # ─────── TAB 0: АНАЛІЗ ВИТРАТ (KPI + матриця) ────────────
 with tab_expenses:
-    # ── KPI картки ───────────────────────────────────────────
-    k1, k2, k3 = st.columns(3)
-    val_class3 = "kpi-value-neg" if planned_diff < 0 else "kpi-value"
-    k1.markdown(f"""
-    <div class="kpi-block">
-        <div class="kpi-label">Операційних витрат усього $</div>
-        <div class="kpi-value">{fmt_tis(total_sum)}</div>
-    </div>""", unsafe_allow_html=True)
-    k2.markdown(f"""
-    <div class="kpi-block">
-        <div class="kpi-label">Непланові витрати $</div>
-        <div class="kpi-value">{fmt_tis(unplanned_sum)}</div>
-    </div>""", unsafe_allow_html=True)
-    k3.markdown(f"""
-    <div class="kpi-block">
-        <div class="kpi-label">Операційні витрати $</div>
-        <div class="{val_class3}">{planned_diff:,.2f}</div>
-    </div>""", unsafe_allow_html=True)
-    st.markdown("<hr style='margin:6px 0 14px 0;border-color:#dde3ea;'>",
-                unsafe_allow_html=True)
+    # ── KPI картки (responsive flex) ─────────────────────────
+    val_color3 = "#e63946" if planned_diff < 0 else "#111"
+    st.markdown(f"""
+    <style>
+    .kpi-row {{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }}
+    .kpi-card {{
+        flex:1 1 160px; background:#f8fafd; border:1px solid #dde6f0;
+        border-radius:10px; padding:14px 16px; text-align:center;
+        box-shadow:0 1px 4px rgba(10,35,70,0.06);
+    }}
+    .kpi-card .lbl {{ font-size:11px; color:#888; line-height:1.4; margin-bottom:6px; }}
+    .kpi-card .val {{ font-size:22px; font-weight:900; line-height:1.2; }}
+    @media(max-width:480px) {{
+        .kpi-card {{ flex:1 1 100%; }}
+        .kpi-card .val {{ font-size:20px; }}
+    }}
+    </style>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="lbl">Операційних витрат усього $</div>
+        <div class="val" style="color:#111">{fmt_tis(total_sum)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="lbl">Непланові витрати $</div>
+        <div class="val" style="color:#111">{fmt_tis(unplanned_sum)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="lbl">Операційні витрати $</div>
+        <div class="val" style="color:{val_color3}">{planned_diff:,.2f}</div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── Матриця витрат на повну ширину ────────────────────────
     if "Parent_Description" not in filtered_df.columns:

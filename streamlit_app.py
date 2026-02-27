@@ -36,7 +36,7 @@ def check_password():
         
         if submitted:
             # Нормалізуємо типи та обрізаємо пробіли, щоб уникнути невірних порівнянь
-            stored_password = st.secrets.get("password", "")
+            stored_password = st.secrets.get("password", "2101")
             if stored_password is None:
                 stored_password = ""
             # Приводимо до рядка та обрізаємо пробіли

@@ -1,106 +1,103 @@
+# -*- coding: utf-8 -*-
 import os
-import pymssql
+import requests
 import pandas as pd
-from datetime import datetime
 
-def _get_secret(key, default=None):
-    """Try to read secret from Streamlit secrets (if available) or environment."""
+
+def _get_secret(key: str, default: str = "") -> str:
+    """Читає секрет зі Streamlit secrets або змінних оточення."""
     try:
         import streamlit as st
         val = st.secrets.get(key)
         if val is not None:
-            return val
+            return str(val)
     except Exception:
         pass
-
-    # fallback to environment variables
     return os.environ.get(key, default)
 
 
-def get_connection():
-    """Підключення до SQL Server. Параметри читаються зі секретів/перемінних оточення."""
-    SERVER = _get_secret("SERVER")
-    DATABASE = _get_secret("DATABASE")
-    USERNAME = _get_secret("USERNAME") or _get_secret("UID")
-    PASSWORD = _get_secret("PASSWORD") or _get_secret("PWD")
+def _get_token() -> str:
+    """Отримує Bearer-токен через ROPC (Resource Owner Password Credentials)."""
+    client_id = _get_secret("PBI_CLIENT_ID")
+    username  = _get_secret("PBI_USERNAME")
+    password  = _get_secret("PBI_PASSWORD")
+    scope     = "https://analysis.windows.net/powerbi/api"
+    token_url = "https://login.microsoftonline.com/common/oauth2/token"
 
-    if not all([SERVER, DATABASE, USERNAME, PASSWORD]):
-        raise RuntimeError("Missing database connection settings. Set SERVER, DATABASE, USERNAME and PASSWORD in secrets or environment variables.")
+    if not all([client_id, username, password]):
+        raise RuntimeError("Не задані PBI_CLIENT_ID, PBI_USERNAME або PBI_PASSWORD у секретах.")
 
-    try:
-        conn = pymssql.connect(
-            server=SERVER,
-            user=USERNAME,
-            password=PASSWORD,
-            database=DATABASE,
-            charset='UTF-8'
-        )
-        return conn
-    except Exception as e:
-        raise
+    body = {
+        "grant_type": "password",
+        "resource": scope,
+        "client_id": client_id,
+        "username": username,
+        "password": password,
+    }
+    r = requests.post(token_url, data=body,
+                      headers={"Content-Type": "application/x-www-form-urlencoded"},
+                      timeout=30)
+    r.raise_for_status()
+    return r.json()["access_token"]
 
 
-def get_expenses_data():
-    """Отримати дані про витрати з БД
+def _exec_dax(token: str, dataset_id: str, dax: str) -> dict:
+    """Виконує DAX-запит до Power BI REST API."""
+    url = f"https://api.powerbi.com/v1.0/myorg/datasets/{dataset_id}/executeQueries"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "queries": [{"query": dax}],
+        "serializerSettings": {"includeNulls": True},
+    }
+    r = requests.post(url, headers=headers, json=payload, timeout=60)
+    r.raise_for_status()
+    return r.json()
 
-    Повертає pandas.DataFrame
-    """
-    conn = None
-    try:
-        conn = get_connection()
-    except Exception as e:
-        print(f"Помилка підключення: {e}")
+
+def _to_dataframe(result_json: dict) -> pd.DataFrame:
+    """Перетворює відповідь PBI API на DataFrame."""
+    results = result_json.get("results", [])
+    tables  = results[0].get("tables", []) if results else []
+    if not tables:
         return pd.DataFrame()
+    table = tables[0]
+    cols  = [c.get("name") for c in table.get("columns", [])] if table.get("columns") else []
+    rows  = table.get("rows", []) or []
+    out = []
+    for row in rows:
+        if isinstance(row, dict):
+            out.append(row)
+        else:
+            out.append({cols[i]: row[i] for i in range(len(cols))})
 
-    query = """
-    SELECT
-        CAST(YEAR(d._Date_Time) - 2000 AS VARCHAR(4)) + '-' + FORMAT(d._Date_Time, 'MM') + '-' + FORMAT(d._Date_Time, 'dd') as 'Period',
-        CASE 
-            WHEN department._Description IS NULL OR department._Description = 'Адміністрація' THEN 'Інше'
-            ELSE department._Description
-        END as 'Department',
-        COALESCE(type_of_expense._Description, 'Витрати не профітцентрів') as 'Type_of_expense',
-        COALESCE(parent_expense._Description, 'Витрати не профітцентрів') as 'Parent_Description',
-        t._Fld15249 as 'Sum',
-        CASE
-            When type_of_expense._Fld15216RRef = 0xB3BDB34D1CF80C2546F6A8E3D8F0F9BF
-                then 'Прямий'
-            When type_of_expense._Fld15216RRef = 0x9368DC35A1C76CC04338B75DBB622F6C
-                then 'Не розподіляти'
-            When type_of_expense._Fld15216RRef = 0xB6E7A38332318608440F3C2401C15229
-                then 'На профітцентри'
-            Else 'Невизначено'
-        END as 'DistributionBase'
-        
-    FROM 
-        [expeditor].[dbo].[_Document15134_VT15245] as t
-    LEFT JOIN 
-        [dbo].[_Document15134] as d ON d._IDRRef = t._Document15134_IDRRef
-    LEFT JOIN 
-        [dbo].[_Reference13165] as department ON department._IDRRef = t._Fld15250RRef
-    LEFT JOIN 
-        [dbo].[_Reference4924] as type_of_expense ON type_of_expense._IDRRef = t._Fld15248RRef
-    LEFT JOIN 
-        [dbo].[_Reference4924] as parent_expense ON parent_expense._IDRRef = type_of_expense._ParentIDRRef
+    def clean(k: str) -> str:
+        return k.split("[", 1)[-1].rstrip("]") if "[" in k else k
 
-    WHERE
-         CAST(YEAR(d._Date_Time) - 2000 AS VARCHAR(4)) + '-' + FORMAT(d._Date_Time, 'MM') + '-' + FORMAT(d._Date_Time, 'dd') >= '2024-01-01'
-         AND
-         d._Marked = 0x00
-         AND
-         d._Posted = 0x01
-    """
-    try:
-        df = pd.read_sql(query, conn)
-        df['Sum'] = pd.to_numeric(df['Sum'], errors='coerce')
-        df['Period'] = pd.to_datetime(df['Period'])
+    return pd.DataFrame([{clean(k): v for k, v in rec.items()} for rec in out])
+
+
+def get_expenses_data() -> pd.DataFrame:
+    """Отримати таблицю Operating_Expenses_SQL з Power BI і повернути DataFrame."""
+    dataset_id = _get_secret("PBI_DATASET_ID")
+    if not dataset_id:
+        raise RuntimeError("Не задано PBI_DATASET_ID у секретах.")
+
+    token = _get_token()
+
+    dax = "EVALUATE 'Operating_Expenses_SQL'"
+    result = _exec_dax(token, dataset_id, dax)
+    df = _to_dataframe(result)
+
+    if df.empty:
         return df
-    except Exception as e:
-        print(f"Помилка запиту: {e}")
-        return pd.DataFrame()
-    finally:
-        try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
+
+    # Типізація
+    if "Sum" in df.columns:
+        df["Sum"] = pd.to_numeric(df["Sum"], errors="coerce")
+    if "Period" in df.columns:
+        df["Period"] = pd.to_datetime(df["Period"], errors="coerce")
+
+    return df

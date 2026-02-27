@@ -35,7 +35,7 @@ def check_password():
             submitted = st.form_submit_button("🔓 Увійти", use_container_width=True)
         
         if submitted:
-            if password == st.secrets.get("password", "2101"):
+            if password == st.secrets.get("password"):
                 st.session_state.password_correct = True
                 st.rerun()
             else:

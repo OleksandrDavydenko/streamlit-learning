@@ -78,6 +78,8 @@ st.markdown("""
 }
 /* ── KPI columns: stack on very small screens ── */
 @media (max-width: 640px) {
+    header[data-testid="stHeader"] { display:none !important; }
+    .block-container { padding-top:8px !important; }
     .header-banner { display:block !important; padding:12px 14px; }
     .header-logo-circle { display:none !important; }
     .header-left { display:block !important; margin-bottom:6px; }

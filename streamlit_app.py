@@ -7,6 +7,31 @@ st.set_page_config(
     layout="wide"
 )
 
+# ===== АУТЕНТИФІКАЦІЯ =====
+def check_password():
+    """Перевірка пароля для входу"""
+    if "password_correct" not in st.session_state:
+        st.session_state.password_correct = False
+    
+    if st.session_state.password_correct:
+        return True
+    
+    st.warning("🔐 Введіть пароль для доступу до додатку")
+    password = st.text_input("Пароль:", type="password")
+    
+    if password:
+        if password == "2101":  # Змініть на ваш пароль
+            st.session_state.password_correct = True
+            st.rerun()
+        else:
+            st.error("❌ Неправильний пароль!")
+    
+    return False
+
+# Перевірка доступу
+if not check_password():
+    st.stop()
+
 st.title("📚 У мене все круто виходить")
 st.write("---")
 

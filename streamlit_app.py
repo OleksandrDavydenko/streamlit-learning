@@ -100,8 +100,61 @@ st.markdown("""
 }
 /* ── Collapse sidebar padding on mobile ── */
 @media (max-width: 768px) {
-    section[data-testid="stSidebar"] { min-width: 80vw !important; }
+    section[data-testid="stSidebar"] { min-width: 80vw !important; max-width: 90vw !important; }
+    section[data-testid="stSidebar"] > div:first-child { width: 100% !important; min-width: 100% !important; }
+    [data-testid="stSidebarContent"],
+    [data-testid="stSidebarUserContent"] { width: 100% !important; overflow-x: hidden !important; }
     .block-container { padding-left:10px !important; padding-right:10px !important; }
+
+    /* Force checkboxes to full width and labels visible */
+    [data-testid="stSidebar"] .stCheckbox,
+    [data-testid="stSidebar"] [data-testid="stCheckbox"] { width: 100% !important; min-width: 0 !important; }
+    [data-testid="stSidebar"] .stCheckbox > label,
+    [data-testid="stSidebar"] [data-testid="stCheckbox"] > label {
+        display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        font-size: 14px !important;
+        gap: 8px !important;
+        color: #111 !important;
+    }
+    [data-testid="stSidebar"] .stCheckbox label > div:first-child,
+    [data-testid="stSidebar"] [data-testid="stCheckbox"] label > div:first-child {
+        flex-shrink: 0 !important;
+        width: 20px !important;
+        height: 20px !important;
+    }
+    [data-testid="stSidebar"] .stCheckbox label p,
+    [data-testid="stSidebar"] [data-testid="stCheckbox"] label p {
+        display: inline !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        margin: 0 !important;
+        color: #111 !important;
+    }
+    /* Prevent overflow:hidden inside sidebar scrollable containers */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"],
+    [data-testid="stSidebar"] .stVerticalBlock {
+        overflow: visible !important;
+        width: 100% !important;
+    }
+    /* Also target the text container INSIDE the checkbox label (second child div) */
+    [data-testid="stSidebar"] .stCheckbox label > div:last-child,
+    [data-testid="stSidebar"] [data-testid="stCheckbox"] label > div:last-child {
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        overflow: visible !important;
+    }
+    /* Increase container height on mobile so all items are visible without clipping */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] > div {
+        max-height: none !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
 }
 </style>
 """, unsafe_allow_html=True)

@@ -136,10 +136,8 @@ st.markdown("""
         margin: 0 !important;
         color: #111 !important;
     }
-    /* Prevent overflow:hidden inside sidebar scrollable containers */
-    [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"],
+    /* Prevent overflow clipping on the vertical block wrapper (but NOT the scroll container itself) */
     [data-testid="stSidebar"] .stVerticalBlock {
-        overflow: visible !important;
         width: 100% !important;
     }
     /* Also target the text container INSIDE the checkbox label (second child div) */
@@ -147,12 +145,6 @@ st.markdown("""
     [data-testid="stSidebar"] [data-testid="stCheckbox"] label > div:last-child {
         min-width: 0 !important;
         flex: 1 1 auto !important;
-        overflow: visible !important;
-    }
-    /* Increase container height on mobile so all items are visible without clipping */
-    [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] > div {
-        max-height: none !important;
-        height: auto !important;
         overflow: visible !important;
     }
 }

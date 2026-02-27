@@ -16,15 +16,30 @@ def check_password():
     if st.session_state.password_correct:
         return True
     
-    st.warning("🔐 Введіть пароль для доступу до додатку")
-    password = st.text_input("Пароль:", type="password")
+    # Центрування форми входу
+    col1, col2, col3 = st.columns([1, 1, 1])
     
-    if password:
-        if password == "2101":  # Змініть на ваш пароль
-            st.session_state.password_correct = True
-            st.rerun()
-        else:
-            st.error("❌ Неправильний пароль!")
+    with col2:
+        st.markdown("<h1 style='text-align: center'>🔐 Доступ захищений</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center'>Введіть пароль для входу</p>", unsafe_allow_html=True)
+        st.write("")
+        
+        # Форма для входу
+        with st.form("login_form"):
+            password = st.text_input(
+                "Пароль:",
+                type="password",
+                placeholder="Введіть пароль",
+                label_visibility="collapsed"
+            )
+            submitted = st.form_submit_button("🔓 Увійти", use_container_width=True)
+        
+        if submitted:
+            if password == "2101":  # Змініть на ваш пароль
+                st.session_state.password_correct = True
+                st.rerun()
+            else:
+                st.error("❌ Неправильний пароль!")
     
     return False
 

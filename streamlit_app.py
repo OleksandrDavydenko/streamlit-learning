@@ -5,13 +5,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 from db_connection import get_expenses_data
 from datetime import datetime
-import io
+import streamlit.components.v1 as components
 
 # ============================================================
 # КОНФІГУРАЦІЯ
 # ============================================================
 st.set_page_config(
-    page_title="Фінансова аналітика",
+    page_title="Операційні витрати | FTP",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -22,6 +22,73 @@ UA_MONTHS = {
     5: "Травень", 6: "Червень", 7: "Липень", 8: "Серпень",
     9: "Вересень", 10: "Жовтень", 11: "Листопад", 12: "Грудень",
 }
+
+# ── Custom CSS ──────────────────────────────────────────────
+st.markdown("""
+<style>
+[data-testid="stSidebar"] { background-color: #f5f7fa; border-right: 1px solid #dde3ea; }
+[data-testid="stSidebar"] .stCheckbox label { font-size: 13px; }
+.ftp-logo { display:flex; align-items:center; gap:10px; padding:6px 0 14px 0;
+    border-bottom:1px solid #cdd5de; margin-bottom:14px; }
+.ftp-logo-circle { width:52px; height:52px;
+    background:radial-gradient(circle at 40% 40%, #0055a4, #001f5b);
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    color:white; font-weight:900; font-size:15px; flex-shrink:0; letter-spacing:0.5px; }
+.ftp-logo-text .ftp-main { color:#0055a4; font-size:20px; font-weight:900; letter-spacing:1px; }
+.ftp-logo-text .ftp-sub  { color:#555; font-size:9px; letter-spacing:0.3px; }
+.sidebar-section-label { font-size:13px; font-weight:700; color:#333; margin:12px 0 4px 0; }
+.main-title { color:#e63946; text-align:center; font-size:26px; font-weight:800;
+    letter-spacing:0.5px; padding:6px 0 2px 0;
+    border-bottom:2px solid #e63946; margin-bottom:10px; }
+.period-label { font-size:12px; font-weight:700; color:#444; margin-bottom:2px; }
+.kpi-block { text-align:center; padding:10px 6px; }
+.kpi-label { font-size:11px; color:#888; line-height:1.3; min-height:30px; }
+.kpi-value { font-size:26px; font-weight:900; color:#111; line-height:1.2; margin-top:4px; }
+.kpi-value-neg { font-size:26px; font-weight:900; color:#e63946; line-height:1.2; margin-top:4px; }
+.cat-table-wrap table { width:100%; border-collapse:collapse; font-size:13px; }
+.cat-table-wrap th { background-color:#1a5276; color:white; padding:7px 10px;
+    text-align:left; font-weight:700; }
+.cat-table-wrap th:last-child { text-align:right; }
+.cat-table-wrap td { padding:5px 10px; border-bottom:1px solid #e8edf2; }
+.cat-table-wrap td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+.cat-table-wrap tr.parent-row { background-color:#d6e4f7; font-weight:700; }
+.cat-table-wrap tr.child-row  { background-color:#ffffff; color:#444; }
+.cat-table-wrap tr.child-row td:first-child { padding-left:28px; }
+.cat-table-wrap tr.total-row  { background-color:#eef2f7; font-weight:700;
+    border-top:2px solid #1a5276; font-size:14px; }
+/* ── Header Banner ── */
+.header-banner {
+    background: linear-gradient(135deg, #0a2342 0%, #1a5276 60%, #0055a4 100%);
+    border-radius: 12px; padding: 22px 30px; margin-bottom: 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 18px rgba(0,21,62,0.18);
+}
+.header-left { display:flex; align-items:center; gap:18px; }
+.header-logo-circle {
+    width:58px; height:58px;
+    background: rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.35);
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:17px; font-weight:900; color:white; letter-spacing:1px; flex-shrink:0;
+}
+.header-title { color:white; font-size:24px; font-weight:900; letter-spacing:0.5px; line-height:1.2; }
+.header-subtitle { color:rgba(255,255,255,0.72); font-size:13px; margin-top:3px; }
+.header-right { text-align:right; }
+.header-date { color:rgba(255,255,255,0.6); font-size:12px; }
+.header-badge {
+    display:inline-block; background:rgba(255,255,255,0.15);
+    border:1px solid rgba(255,255,255,0.3); border-radius:20px;
+    padding:4px 14px; color:white; font-size:12px; font-weight:700; margin-top:6px;
+}
+[data-testid="stTabs"] [data-baseweb="tab-list"] { gap:4px; border-bottom:2px solid #dde3ea; }
+[data-testid="stTabs"] [data-baseweb="tab"] {
+    background:#f0f4f8; border-radius:8px 8px 0 0; padding:8px 18px;
+    font-weight:600; color:#555; border:1px solid #dde3ea; border-bottom:none;
+}
+[data-testid="stTabs"] [aria-selected="true"] {
+    background:white !important; color:#1a5276 !important; border-bottom:2px solid white;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================================
 # АВТОРИЗАЦІЯ
@@ -81,64 +148,95 @@ if df_raw.empty:
     st.stop()
 
 # ============================================================
-# SIDEBAR — ФІЛЬТРИ
+# SIDEBAR
 # ============================================================
 with st.sidebar:
-    st.markdown("## 🎛️ Фільтри")
-    st.divider()
+    # ── FTP Logo ─────────────────────────────────────────────
+    st.markdown("""
+    <div class="ftp-logo">
+        <div class="ftp-logo-circle">FTP</div>
+        <div class="ftp-logo-text">
+            <div class="ftp-main">FTP</div>
+            <div class="ftp-sub">Freight Transport Partner</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # --- Рік: selectbox ---
-    all_years = sorted(df_raw["Year"].dropna().unique().astype(int), reverse=True)
-    selected_year = st.selectbox("📅 Рік", options=all_years, index=0, key="year_filter")
+    # ── Скидання (до рендеру будь-яких віджетів) ────────────
+    if st.session_state.pop("_do_reset", False):
+        for d in st.session_state.get("dept_states", {}):
+            st.session_state["dept_states"][d] = False
+            st.session_state[f"dept_cb_{d}"] = False
+        for e in st.session_state.get("expense_states", {}):
+            st.session_state["expense_states"][e] = False
+            st.session_state[f"exp_cb_{e}"] = False
+        st.session_state["months_multiselect"] = []
+        st.session_state["expense_search"] = ""
 
-    # --- Місяці: кнопки "Всі / Очистити" + multiselect ---
-    months_in_year = sorted(df_raw[df_raw["Year"] == selected_year]["Month_Num"].unique())
-    month_options = [UA_MONTHS[m] for m in months_in_year]
+    # ── Рік і Місяці ─────────────────────────────────────────
+    st.markdown('<div class="sidebar-section-label">📅 Період звіту</div>', unsafe_allow_html=True)
+    all_years_sb = sorted(df_raw["Year"].dropna().unique().astype(int), reverse=True)
+    sel_year = st.selectbox("Рік", options=all_years_sb, index=0,
+                            key="year_select", label_visibility="collapsed",
+                            format_func=lambda y: f"{y}")
+    months_avail_sb = sorted(
+        df_raw[df_raw["Year"] == sel_year]["Month_Num"].dropna().unique().astype(int))
+    sel_months = st.multiselect(
+        "Місяці", options=months_avail_sb,
+        key="months_multiselect", label_visibility="collapsed",
+        format_func=lambda m: UA_MONTHS[m], placeholder="Усі місяці")
+    if not sel_months:
+        sel_months = months_avail_sb
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-    st.markdown("**🗓️ Місяці**")
-    btn_col1, btn_col2 = st.columns(2)
-    if btn_col1.button("✅ Всі", use_container_width=True, key="months_all"):
-        st.session_state["months_sel"] = month_options
-    if btn_col2.button("🗑️ Очистити", use_container_width=True, key="months_clear"):
-        st.session_state["months_sel"] = []
+    # ── Відділ (Department) ───────────────────────────────────
+    st.markdown('<div class="sidebar-section-label">🏢 Відділ</div>', unsafe_allow_html=True)
+    all_depts = sorted(df_raw["Department"].dropna().unique().tolist())
+    if "dept_states" not in st.session_state:
+        st.session_state["dept_states"] = {d: False for d in all_depts}
+    for d in all_depts:
+        if d not in st.session_state["dept_states"]:
+            st.session_state["dept_states"][d] = False
+    dept_container = st.container(height=165)
+    with dept_container:
+        for dept in all_depts:
+            st.session_state["dept_states"][dept] = st.checkbox(
+                dept, value=st.session_state["dept_states"].get(dept, False),
+                key=f"dept_cb_{dept}")
+    selected_depts = [d for d in all_depts if st.session_state["dept_states"].get(d, False)]
+    if not selected_depts:
+        selected_depts = all_depts
 
-    if "months_sel" not in st.session_state:
-        st.session_state["months_sel"] = month_options
-
-    # синхронізуємо якщо рік змінився
-    valid = [m for m in st.session_state["months_sel"] if m in month_options]
-    if not valid:
-        valid = month_options
-    st.session_state["months_sel"] = valid
-
-    sel_month_names = st.multiselect(
-        "", options=month_options,
-        default=st.session_state["months_sel"],
-        key="months_multiselect",
-        label_visibility="collapsed",
+    # ── Стаття витрат (Type_of_expense) ──────────────────────
+    st.markdown('<div class="sidebar-section-label">📌 Стаття витрат</div>', unsafe_allow_html=True)
+    search_expense = st.text_input("", placeholder="🔍 Пошук", key="expense_search",
+                                   label_visibility="collapsed")
+    all_expenses = sorted(df_raw["Type_of_expense"].dropna().unique().tolist())
+    filtered_expenses_list = (
+        [e for e in all_expenses if search_expense.lower() in e.lower()]
+        if search_expense else all_expenses
     )
-    st.session_state["months_sel"] = sel_month_names
-    selected_months = [k for k, v in UA_MONTHS.items() if v in sel_month_names]
+    if "expense_states" not in st.session_state:
+        st.session_state["expense_states"] = {e: False for e in all_expenses}
+    for e in all_expenses:
+        if e not in st.session_state["expense_states"]:
+            st.session_state["expense_states"][e] = False
+    exp_container = st.container(height=165)
+    with exp_container:
+        for exp in filtered_expenses_list:
+            st.session_state["expense_states"][exp] = st.checkbox(
+                exp, value=st.session_state["expense_states"].get(exp, False),
+                key=f"exp_cb_{exp}")
+    selected_expenses = [e for e in all_expenses if st.session_state["expense_states"].get(e, False)]
+    if not selected_expenses:
+        selected_expenses = all_expenses
 
-    st.divider()
-
-    # --- Відділ ---
-    all_depts = ["📊 Усі"] + sorted([f"🏢 {d}" for d in df_raw["Department"].dropna().unique()])
-    sel_dept_display = st.selectbox("🏢 Відділ", all_depts, key="dept_filter")
-    selected_department = sel_dept_display.replace("🏢 ", "").replace("📊 Усі", "Усі")
-
-    # --- Тип витрат ---
-    all_types = ["💼 Усі"] + sorted([f"💵 {t}" for t in df_raw["Type_of_expense"].dropna().unique()])
-    sel_type_display = st.selectbox("💼 Тип витрат", all_types, key="type_filter")
-    selected_type = sel_type_display.replace("💵 ", "").replace("💼 Усі", "Усі")
-
-    # --- База розподілу ---
-    all_dist = ["📌 Усі"] + sorted([f"🔄 {d}" for d in df_raw["DistributionBase"].dropna().unique()])
-    sel_dist_display = st.selectbox("📌 Розподіл", all_dist, key="dist_filter")
-    selected_dist = sel_dist_display.replace("🔄 ", "").replace("📌 Усі", "Усі")
-
-    st.divider()
-    if st.button("🔄 Оновити дані", use_container_width=True):
+    # ── Дії ──────────────────────────────────────────────────
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    if st.button("🧹 Скинути фільтри", use_container_width=True, key="reset_filters"):
+        st.session_state["_do_reset"] = True
+        st.rerun()
+    if st.button("🔄 Оновити дані", use_container_width=True, key="refresh_btn"):
         st.cache_data.clear()
         st.rerun()
 
@@ -146,356 +244,414 @@ with st.sidebar:
 # ФІЛЬТРАЦІЯ
 # ============================================================
 filtered_df = df_raw[
-    (df_raw["Year"] == selected_year) &
-    (df_raw["Month_Num"].isin(selected_months))
+    (df_raw["Year"] == sel_year) &
+    (df_raw["Month_Num"].isin(sel_months)) &
+    (df_raw["Department"].isin(selected_depts)) &
+    (df_raw["Type_of_expense"].isin(selected_expenses))
 ].copy()
-
-if selected_department != "Усі":
-    filtered_df = filtered_df[filtered_df["Department"] == selected_department]
-if selected_type != "Усі":
-    filtered_df = filtered_df[filtered_df["Type_of_expense"] == selected_type]
-if selected_dist != "Усі":
-    filtered_df = filtered_df[filtered_df["DistributionBase"] == selected_dist]
-
-# ============================================================
-# ЗАГОЛОВОК
-# ============================================================
-st.title("📊 Фінансова аналітика — Звіт по витратах")
-st.caption(f"Показано {len(filtered_df):,} записів із {len(df_raw):,} | Рік: {selected_year}")
-st.divider()
 
 if filtered_df.empty:
     st.info("Немає даних за обраними фільтрами.")
     st.stop()
 
-# ============================================================
-# KPI-КАРТКИ
-# ============================================================
+# ── KPI-розрахунки ────────────────────────────────────────
+unplanned_mask = filtered_df["Type_of_expense"].str.contains(
+    "поза план|позаплан", case=False, na=False)
+unplanned_sum = filtered_df.loc[unplanned_mask, "Sum"].sum()
 total_sum     = filtered_df["Sum"].sum()
-avg_sum       = filtered_df["Sum"].mean()
-max_sum       = filtered_df["Sum"].max()
-records_count = len(filtered_df)
+planned_diff  = total_sum - unplanned_sum
 
-def fmt(v):
-    if v >= 1_000_000:
-        return f"{v/1_000_000:.2f}M"
-    if v >= 1_000:
-        return f"{v/1_000:.0f}K"
-    return f"{v:,.0f}"
+def fmt_tis(v: float) -> str:
+    if abs(v) >= 1000:
+        return f"{v/1000:,.2f} ТИС."
+    return f"{v:,.2f}"
 
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("💰 Разом",    fmt(total_sum))
-k2.metric("📈 Середня",  fmt(avg_sum))
-k3.metric("🔥 Максимум", fmt(max_sum))
-k4.metric("📋 Записів",  f"{records_count:,}")
+def hex_to_rgba(hex_color: str, alpha: float = 0.10) -> str:
+    """Convert '#rrggbb' to 'rgba(r,g,b,alpha)'."""
+    h = hex_color.lstrip('#')
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
 
-st.divider()
+# ── Рядок для позначення обраного періоду ─────────────────
+if len(sel_months) == len(months_avail_sb):
+    period_str = f"Весь {sel_year} рік"
+elif len(sel_months) == 1:
+    period_str = f"{UA_MONTHS[sel_months[0]]} {sel_year}"
+else:
+    period_str = ", ".join(UA_MONTHS[m] for m in sorted(sel_months)) + f" {sel_year}"
+
+# ── Гарний заголовок ───────────────────────────────────────
+st.markdown(f"""
+<div class="header-banner">
+  <div class="header-left">
+    <div class="header-logo-circle">FTP</div>
+    <div>
+      <div class="header-title">Операційні витрати</div>
+      <div class="header-subtitle">Freight Transport Partner &nbsp;•&nbsp; Бюджетна аналітика</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-date">Станом на: {datetime.now().strftime('%d.%m.%Y %H:%M')}</div>
+    <div class="header-badge">📅 {period_str}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ============================================================
-# ТАБИ
+# ВКЛАДКИ
 # ============================================================
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-    "🎯 Тренди по рокам",
-    "📊 Детальна таблиця",
-    "🌳 Структура витрат",
-    "🔥 Топ витрати",
-    "🏢 По відділам",
-    "📥 Експорт",
-    "🌊 Потік витрат",
-    "🔍 Аналітика",
+st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+tab_expenses, tab_dept, tab_trends, tab_top = st.tabs([
+    "📊  Аналіз витрат",
+    "🏢  Аналіз по відділах",
+    "📈  Динаміка по роках",
+    "🔥  ТОП витрат",
 ])
 
-# ── TAB 1: Тренди ──────────────────────────────────────────
-with tab1:
-    st.subheader("Динаміка витрат по місяцях та рокам")
-    yearly_monthly = (
-        df_raw.groupby(["Month_Num", "Month_Name", "Year"])["Sum"]
-              .sum().reset_index()
-              .sort_values("Month_Num")
-    )
-    # Впорядкуємо місяці правильно (категорійна вісь)
-    month_order = [UA_MONTHS[i] for i in range(1, 13)]
-    yearly_monthly["Month_Name"] = pd.Categorical(
-        yearly_monthly["Month_Name"], categories=month_order, ordered=True
-    )
-    yearly_monthly = yearly_monthly.sort_values(["Year", "Month_Num"])
+# ─────── TAB 0: АНАЛІЗ ВИТРАТ (KPI + матриця) ────────────
+with tab_expenses:
+    # ── KPI картки ───────────────────────────────────────────
+    k1, k2, k3 = st.columns(3)
+    val_class3 = "kpi-value-neg" if planned_diff < 0 else "kpi-value"
+    k1.markdown(f"""
+    <div class="kpi-block">
+        <div class="kpi-label">Операційних витрат усього $</div>
+        <div class="kpi-value">{fmt_tis(total_sum)}</div>
+    </div>""", unsafe_allow_html=True)
+    k2.markdown(f"""
+    <div class="kpi-block">
+        <div class="kpi-label">Непланові витрати $</div>
+        <div class="kpi-value">{fmt_tis(unplanned_sum)}</div>
+    </div>""", unsafe_allow_html=True)
+    k3.markdown(f"""
+    <div class="kpi-block">
+        <div class="kpi-label">Операційні витрати $</div>
+        <div class="{val_class3}">{planned_diff:,.2f}</div>
+    </div>""", unsafe_allow_html=True)
+    st.markdown("<hr style='margin:6px 0 14px 0;border-color:#dde3ea;'>",
+                unsafe_allow_html=True)
 
-    fig = px.line(
-        yearly_monthly, x="Month_Name", y="Sum", color="Year",
-        markers=True,
-        title="Порівняння років по місяцях",
-        labels={"Sum": "Сума", "Month_Name": "Місяць", "Year": "Рік"},
-        line_shape="spline",
-        color_discrete_sequence=px.colors.qualitative.Bold,
-    )
-    fig.update_traces(marker=dict(size=8))
-    fig.update_layout(hovermode="x unified", height=500, yaxis_tickformat=",.0f")
-    st.plotly_chart(fig, use_container_width=True)
+    # ── Матриця витрат на повну ширину ────────────────────────
+    if "Parent_Description" not in filtered_df.columns:
+        st.warning("Відсутня колонка 'Parent_Description'.")
+    else:
+        dist_types = []
+        if "DistributionBase" in filtered_df.columns:
+            dist_types = sorted(
+                filtered_df["DistributionBase"].dropna().unique().tolist()
+            )
 
-    # Теплова карта рік × місяць
-    st.subheader("🌡️ Теплова карта: рік × місяць")
-    heat_df = df_raw.groupby(["Year", "Month_Num"])["Sum"].sum().reset_index()
+        parent_grp = (
+            filtered_df.groupby("Parent_Description")["Sum"]
+            .sum().sort_values(ascending=False).reset_index()
+        )
+
+        if dist_types:
+            pivot_child = (
+                filtered_df
+                .groupby(["Parent_Description", "Type_of_expense", "DistributionBase"])["Sum"]
+                .sum().reset_index()
+                .pivot_table(
+                    index=["Parent_Description", "Type_of_expense"],
+                    columns="DistributionBase", values="Sum",
+                    aggfunc="sum", fill_value=0,
+                ).reset_index()
+            )
+            pivot_child.columns.name = None
+            for dt in dist_types:
+                if dt not in pivot_child.columns:
+                    pivot_child[dt] = 0
+            pivot_child["Всього"] = pivot_child[dist_types].sum(axis=1)
+        else:
+            pivot_child = (
+                filtered_df.groupby(["Parent_Description", "Type_of_expense"])["Sum"]
+                .sum().reset_index()
+            )
+            pivot_child["Всього"] = pivot_child["Sum"]
+
+        extra_ths = "".join(
+            f'<th style="text-align:right;min-width:110px;white-space:nowrap">{dt}</th>'
+            for dt in dist_types
+        )
+
+        rows_html = ""
+        for idx, p_row in enumerate(parent_grp.itertuples(), start=1):
+            pname  = p_row.Parent_Description
+            psum   = p_row.Sum
+            grp_id = f"grp{idx}"
+            empty_tds = "".join('<td></td>' for _ in dist_types)
+            rows_html += (
+                f'<tr class="parent-row" onclick="toggleGroup(\'{grp_id}\')" style="cursor:pointer;">'
+                f'<td><span class="toggle" id="btn_{grp_id}">&#8853;</span> {pname}</td>'
+                f'{empty_tds}'
+                f'<td>{psum:,.2f}</td></tr>'
+            )
+            children = pivot_child[pivot_child["Parent_Description"] == pname]
+            for _, c_row in children.sort_values("Всього", ascending=False).iterrows():
+                child_dist_tds = "".join(
+                    f'<td>{c_row[dt]:,.2f}</td>' if c_row[dt] != 0
+                    else '<td style="color:#ccc">—</td>'
+                    for dt in dist_types
+                )
+                rows_html += (
+                    f'<tr class="child-row" data-group="{grp_id}" style="display:none;">'
+                    f'<td style="padding-left:26px;">{c_row["Type_of_expense"]}</td>'
+                    f'{child_dist_tds}'
+                    f'<td>{c_row["Всього"]:,.2f}</td></tr>'
+                )
+
+        if dist_types:
+            tot_by_dist = filtered_df.groupby("DistributionBase")["Sum"].sum()
+            total_dist_tds = "".join(
+                f'<td>{tot_by_dist.get(dt, 0):,.2f}</td>' for dt in dist_types
+            )
+        else:
+            total_dist_tds = ""
+        rows_html += (
+            f'<tr class="total-row"><td>Усього</td>'
+            f'{total_dist_tds}'
+            f'<td>{total_sum:,.2f}</td></tr>'
+        )
+
+        table_html = f"""
+        <style>
+        * {{ box-sizing:border-box; }}
+        body {{ margin:0; padding:0; font-family:'Segoe UI',sans-serif; font-size:13px;
+               background:transparent; }}
+        .wrap {{ border-radius:10px; overflow:hidden; border:1px solid #dde6f0;
+                 box-shadow:0 2px 10px rgba(10,35,70,0.08); }}
+        table {{ width:100%; border-collapse:collapse; }}
+        thead tr {{ background:linear-gradient(90deg,#0a2342,#1a5276); }}
+        th {{ color:white; padding:10px 14px; text-align:left; font-weight:600;
+              font-size:12px; letter-spacing:0.3px; white-space:nowrap; }}
+        th:not(:first-child) {{ text-align:right; }}
+        td {{ padding:6px 14px; border-bottom:1px solid #eef2f7;
+              font-variant-numeric:tabular-nums; font-size:13px; }}
+        td:not(:first-child) {{ text-align:right; }}
+        tr.parent-row {{ background:#e8f0fb; font-weight:700; cursor:pointer;
+                         transition:background .15s; }}
+        tr.parent-row:hover {{ background:#cfe0f5; }}
+        tr.child-row  {{ background:#ffffff; color:#444; transition:background .15s; }}
+        tr.child-row:hover {{ background:#f4f8fd; }}
+        tr.total-row  {{ background:#1a5276; color:white; font-weight:700; font-size:13px; }}
+        tr.total-row td {{ border-bottom:none; color:white; }}
+        .toggle {{ display:inline-block; width:16px; font-weight:900; font-size:14px;
+                   color:#1a5276; user-select:none; transition:transform .15s; }}
+        .scroll-wrap {{ overflow-x:auto; }}
+        </style>
+        <div class="wrap"><div class="scroll-wrap">
+        <table>
+          <thead><tr>
+            <th style="min-width:220px">Категорія / Стаття</th>
+            {extra_ths}
+            <th style="min-width:110px">Всього</th>
+          </tr></thead>
+          <tbody id="tbody">{rows_html}</tbody>
+        </table>
+        </div></div>
+        <script>
+        function toggleGroup(grpId) {{
+          var rows = document.querySelectorAll('[data-group="' + grpId + '"]');
+          var btn  = document.getElementById('btn_' + grpId);
+          var anyVisible = Array.from(rows).some(function(r) {{
+            return r.style.display !== 'none';
+          }});
+          rows.forEach(function(r) {{
+            r.style.display = anyVisible ? 'none' : 'table-row';
+          }});
+          if (btn) btn.innerHTML = anyVisible ? '&#8853;' : '&#8854;';
+          var h = document.body.scrollHeight;
+          window.frameElement && (window.frameElement.style.height = h + 'px');
+        }}
+        </script>
+        """
+        total_rows = len(parent_grp) + len(pivot_child) + 2
+        tbl_height = total_rows * 34 + 60
+        components.html(table_html, height=tbl_height, scrolling=False)
+
+# ─────── TAB 1: ПО ВІДДІЛАХ ──────────────────────────────
+with tab_dept:
+    dept_sum = (
+        filtered_df.groupby("Department")["Sum"]
+        .sum().sort_values(ascending=False).reset_index()
+    )
+    dept_total = dept_sum["Sum"].sum()
+    dept_sum["Pct"] = dept_sum["Sum"] / dept_total * 100
+    dept_sum["Rank"] = range(1, len(dept_sum) + 1)
+
+    # Топ-3 картки
+    top3 = dept_sum.head(3)
+    bg_colors = ["#0a2342", "#1a5276", "#5d8aa8"]
+    d_cols = st.columns(len(top3))
+    for i, (col, row) in enumerate(zip(d_cols, top3.itertuples())):
+        col.markdown(f"""
+        <div style="background:{bg_colors[i]};border-radius:10px;padding:14px 16px;
+             color:white;text-align:center;margin-bottom:8px;">
+          <div style="font-size:11px;opacity:.75;margin-bottom:4px;">🏆 Місце #{row.Rank}</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:6px;">{row.Department}</div>
+          <div style="font-size:22px;font-weight:900;">{row.Sum/1000:,.1f} тис.</div>
+          <div style="font-size:12px;opacity:.7;margin-top:4px;">{row.Pct:.1f}% від загального</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_bar, col_pie2 = st.columns([1.4, 1])
+    with col_bar:
+        fig_dbar = go.Figure(go.Bar(
+            x=dept_sum["Sum"], y=dept_sum["Department"],
+            orientation="h",
+            marker=dict(
+                color=dept_sum["Sum"],
+                colorscale=[[0, "#aac4de"], [0.5, "#2471a3"], [1, "#0a2342"]],
+                showscale=False,
+            ),
+            text=[f"{v/1000:,.1f} тис. ({p:.1f}%)"
+                  for v, p in zip(dept_sum["Sum"], dept_sum["Pct"])],
+            textposition="outside",
+            hovertemplate="<b>%{y}</b><br>%{x:,.0f}<extra></extra>",
+        ))
+        fig_dbar.update_layout(
+            height=max(280, len(dept_sum) * 42 + 60),
+            margin=dict(l=0, r=120, t=10, b=10),
+            xaxis=dict(tickformat=",.0f", gridcolor="#eef2f7", title=""),
+            yaxis=dict(autorange="reversed", title=""),
+            plot_bgcolor="white", paper_bgcolor="white",
+        )
+        st.plotly_chart(fig_dbar, use_container_width=True)
+
+    with col_pie2:
+        fig_dp = px.pie(
+            dept_sum, names="Department", values="Sum", hole=0.5,
+            color_discrete_sequence=px.colors.sequential.Blues_r,
+        )
+        fig_dp.update_traces(
+            textposition="outside", textinfo="percent+label",
+            hovertemplate="<b>%{label}</b><br>%{value:,.0f}<extra></extra>",
+        )
+        fig_dp.update_layout(
+            height=360, margin=dict(l=0, r=0, t=20, b=20),
+            showlegend=False, paper_bgcolor="white",
+            annotations=[dict(
+                text=f"{dept_total/1000:,.0f}<br>тис.",
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=14, color="#1a5276", family="Segoe UI"),
+            )],
+        )
+        st.plotly_chart(fig_dp, use_container_width=True)
+
+    st.markdown("#### 📋 Деталізація по відділах")
+    dept_detail = (
+        filtered_df.groupby(["Department", "Parent_Description"])["Sum"]
+        .sum().reset_index()
+        .sort_values(["Department", "Sum"], ascending=[True, False])
+    )
+    dept_detail["Частка"] = (
+        dept_detail["Sum"] /
+        dept_detail.groupby("Department")["Sum"].transform("sum") * 100
+    ).round(1).apply(lambda x: f"{x:.1f}%")
+    dept_detail["Сума, $"] = dept_detail["Sum"].apply(lambda x: f"{x:,.2f}")
+    st.dataframe(
+        dept_detail.rename(columns={
+            "Department": "🏢 Відділ",
+            "Parent_Description": "📌 Категорія",
+        })[["🏢 Відділ", "📌 Категорія", "Сума, $", "Частка"]],
+        use_container_width=True, hide_index=True, height=350,
+    )
+
+# ─────── TAB 2: ДИНАМІКА ─────────────────────────────────
+with tab_trends:
+    YEAR_COLORS = {
+        "2022": "#1f77b4", "2023": "#ff7f0e", "2024": "#d62728",
+        "2025": "#9467bd", "2026": "#17becf",
+    }
+    ym = (
+        df_raw[df_raw["Department"].isin(selected_depts) &
+               df_raw["Type_of_expense"].isin(selected_expenses)]
+        .groupby(["Month_Num", "Month_Name", "Year"])["Sum"]
+        .sum().reset_index()
+    )
+    month_order_t = [UA_MONTHS[i] for i in range(1, 13)]
+    ym["Month_Name"] = pd.Categorical(
+        ym["Month_Name"], categories=month_order_t, ordered=True)
+    ym["Year"] = ym["Year"].astype(str)
+    ym = ym.sort_values(["Year", "Month_Num"])
+    fig_line = go.Figure()
+    for yr in sorted(ym["Year"].unique()):
+        yr_data = ym[ym["Year"] == yr].sort_values("Month_Num")
+        color = YEAR_COLORS.get(yr, "#333333")
+        fig_line.add_trace(go.Scatter(
+            x=yr_data["Month_Name"], y=yr_data["Sum"],
+            name=yr, mode="lines+markers",
+            line=dict(color=color, width=2.5),
+            marker=dict(size=8, color=color),
+            fill="tozeroy",
+            fillcolor=hex_to_rgba(color, 0.08),
+            hovertemplate=f"<b>{yr}</b> %{{x}}: %{{y:,.0f}}<extra></extra>",
+        ))
+    fig_line.update_layout(
+        height=380, margin=dict(l=0, r=0, t=10, b=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.01,
+                    xanchor="left", x=0, title_text="Рік:", font_size=12),
+        yaxis=dict(tickformat=",.0f", gridcolor="#eef2f7", title=""),
+        xaxis=dict(title="", gridcolor="#eef2f7"),
+        plot_bgcolor="white", paper_bgcolor="white", hovermode="x unified",
+    )
+    st.plotly_chart(fig_line, use_container_width=True)
+
+    # Теплова карта
+    st.markdown("#### 🌡️ Теплова карта витрат по місяцях та роках")
+    heat_df = (
+        df_raw[df_raw["Department"].isin(selected_depts) &
+               df_raw["Type_of_expense"].isin(selected_expenses)]
+        .groupby(["Year", "Month_Num"])["Sum"].sum().reset_index()
+    )
     heat_pivot = (
         heat_df.pivot(index="Year", columns="Month_Num", values="Sum")
-               .reindex(columns=range(1, 13))
-               .rename(columns=UA_MONTHS)
+        .reindex(columns=range(1, 13)).rename(columns=UA_MONTHS)
     )
     fig_heat = px.imshow(
-        heat_pivot,
-        color_continuous_scale="RdYlGn_r",
-        aspect="auto",
-        text_auto=",.0f",
+        heat_pivot, color_continuous_scale="Blues",
+        aspect="auto", text_auto=",.0f",
         labels=dict(x="Місяць", y="Рік", color="Витрати"),
     )
-    fig_heat.update_layout(margin=dict(t=10, b=10), xaxis_title="", yaxis_title="")
+    fig_heat.update_layout(
+        height=220, margin=dict(t=10, b=10, l=0, r=0),
+        xaxis_title="", yaxis_title="", coloraxis_showscale=False,
+    )
     fig_heat.update_traces(textfont_size=10)
     st.plotly_chart(fig_heat, use_container_width=True)
 
-# ── TAB 2: Детальна таблиця ────────────────────────────────
-with tab2:
-    st.subheader("📊 Детальна таблиця витрат")
-    if not filtered_df.empty:
-        table_data = (
-            filtered_df
-            .groupby(["Parent_Description", "Type_of_expense", "DistributionBase"])
-            .agg(Sum=("Sum", "sum"))
-            .reset_index()
-            .sort_values(["Parent_Description", "Type_of_expense", "Sum"],
-                         ascending=[True, True, False])
-        )
-        table_data["Сума (USD)"] = table_data["Sum"].apply(lambda x: f"{x:,.2f}")
-        table_data = table_data.drop("Sum", axis=1)
-        st.dataframe(
-            table_data.rename(columns={
-                "Parent_Description": "📌 Опис",
-                "Type_of_expense":    "💼 Тип витрат",
-                "DistributionBase":   "🔄 Розподіл",
-            }),
-            use_container_width=True, hide_index=True, height=600,
-        )
-
-# ── TAB 3: Структура ──────────────────────────────────────
-with tab3:
-    st.subheader("Структура витрат — Дерево")
-    if not filtered_df.empty:
-        tree_data = (
-            filtered_df.groupby(["Department", "Parent_Description", "Type_of_expense"])["Sum"]
-                        .sum().reset_index()
-        )
-        fig = px.treemap(
-            tree_data,
-            path=["Department", "Parent_Description", "Type_of_expense"],
-            values="Sum",
-            color="Sum",
-            color_continuous_scale="Viridis",
-            title="Витрати: Відділ → Категорія → Тип",
-        )
-        fig.update_layout(height=600)
-        st.plotly_chart(fig, use_container_width=True)
-
-# ── TAB 4: Топ витрати ────────────────────────────────────
-with tab4:
-    st.subheader("🔥 Топ-15 найбільших витрат")
-    if not filtered_df.empty:
-        top_df = (
-            filtered_df.groupby(["Type_of_expense", "Department"])["Sum"]
-                        .sum().reset_index()
-                        .nlargest(15, "Sum")
-                        .sort_values("Sum")
-        )
-        fig = px.bar(
-            top_df, y="Type_of_expense", x="Sum", orientation="h",
-            color="Sum", color_continuous_scale="Reds",
-            text=top_df["Sum"].apply(fmt),
-            hover_data={"Department": True},
-            labels={"Sum": "Сума", "Type_of_expense": "Тип витрат"},
-        )
-        fig.update_traces(textposition="outside")
-        fig.update_layout(height=550, showlegend=False,
-                          xaxis_tickformat=",.0f", coloraxis_showscale=False)
-        st.plotly_chart(fig, use_container_width=True)
-
-# ── TAB 5: По відділах ────────────────────────────────────
-with tab5:
-    st.subheader("Розподіл по відділах")
-    dept_sum = (
-        filtered_df.groupby("Department")["Sum"]
-                   .sum().sort_values(ascending=False).reset_index()
+# ─────── TAB 3: ТОП ──────────────────────────────────────
+with tab_top:
+    top_n = st.slider("Кількість позицій", 5, 30, 15, key="top_slider")
+    top_df = (
+        filtered_df.groupby("Type_of_expense")["Sum"]
+        .sum().nlargest(top_n).sort_values(ascending=True).reset_index()
     )
-    col_pie, col_bar = st.columns(2)
-    with col_pie:
-        fig = px.pie(dept_sum, names="Department", values="Sum",
-                     title="Частка кожного відділу", hole=0.4)
-        fig.update_traces(textposition="outside", textinfo="percent+label")
-        fig.update_layout(height=450, showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
-    with col_bar:
-        fig = px.bar(
-            dept_sum, x="Department", y="Sum",
-            color="Sum", color_continuous_scale="Blues",
-            title="Витрати по відділах",
-            labels={"Sum": "Сума", "Department": ""},
-        )
-        fig.update_xaxes(tickangle=45)
-        fig.update_layout(height=450, showlegend=False,
-                          coloraxis_showscale=False, yaxis_tickformat=",.0f")
-        st.plotly_chart(fig, use_container_width=True)
-
-# ── TAB 6: Експорт ────────────────────────────────────────
-with tab6:
-    st.subheader("📥 Експорт даних")
-    export_df = filtered_df[
-        ["Period", "Department", "Type_of_expense",
-         "Parent_Description", "Sum", "DistributionBase"]
-    ].copy()
-    export_df["Period"] = export_df["Period"].dt.strftime("%Y-%m-%d")
-
-    csv_bytes = export_df.to_csv(index=False).encode("utf-8-sig")
-    st.download_button(
-        "⬇️ Завантажити CSV", data=csv_bytes,
-        file_name=f"expenses_{datetime.now().strftime('%Y%m%d')}.csv",
-        mime="text/csv", use_container_width=True,
+    fig_top = go.Figure(go.Bar(
+        x=top_df["Sum"], y=top_df["Type_of_expense"],
+        orientation="h",
+        marker=dict(
+            color=top_df["Sum"],
+            colorscale=[[0, "#aac4de"], [1, "#c0392b"]],
+            showscale=False,
+        ),
+        text=[f"{v/1000:,.1f} тис." for v in top_df["Sum"]],
+        textposition="outside",
+        hovertemplate="<b>%{y}</b><br>%{x:,.0f}<extra></extra>",
+    ))
+    fig_top.update_layout(
+        height=max(400, top_n * 32 + 80),
+        margin=dict(l=0, r=80, t=10, b=10),
+        xaxis=dict(tickformat=",.0f", gridcolor="#eef2f7", title=""),
+        yaxis=dict(title=""),
+        plot_bgcolor="white", paper_bgcolor="white",
     )
+    st.plotly_chart(fig_top, use_container_width=True)
 
-    try:
-        buf = io.BytesIO()
-        export_df.to_excel(buf, index=False, engine="openpyxl")
-        st.download_button(
-            "⬇️ Завантажити Excel", data=buf.getvalue(),
-            file_name=f"expenses_{datetime.now().strftime('%Y%m%d')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-        )
-    except ImportError:
-        st.info("💡 Для Excel: pip install openpyxl")
-
-# ── TAB 7: Потік витрат ───────────────────────────────────
-with tab7:
-    st.subheader("🌊 Матриця витрат та Парето")
-    if not filtered_df.empty:
-        col1, col2 = st.columns([1.2, 1])
-
-        with col1:
-            st.write("**🔥 Теплова карта: Відділ × Тип витрат**")
-            heatmap_data = filtered_df.pivot_table(
-                index="Department", columns="Type_of_expense",
-                values="Sum", aggfunc="sum", fill_value=0,
-            )
-            fig_hm = go.Figure(go.Heatmap(
-                z=heatmap_data.values,
-                x=heatmap_data.columns,
-                y=heatmap_data.index,
-                colorscale="RdYlGn_r",
-                hovertemplate="<b>%{y}</b><br>%{x}<br>Сума: %{z:,.0f}<extra></extra>",
-            ))
-            fig_hm.update_layout(height=500, xaxis_tickangle=45,
-                                  margin=dict(b=150, l=150))
-            st.plotly_chart(fig_hm, use_container_width=True)
-
-        with col2:
-            st.write("**📊 Парето — ТОП-15 типів витрат**")
-            sorted_types = (
-                filtered_df.groupby("Type_of_expense")["Sum"]
-                            .sum().sort_values(ascending=True).tail(15)
-            )
-            fig_p = go.Figure(go.Bar(
-                y=sorted_types.index, x=sorted_types.values, orientation="h",
-                marker=dict(color=sorted_types.values,
-                            colorscale="Reds", showscale=False),
-                text=[fmt(v) for v in sorted_types.values],
-                textposition="auto",
-                hovertemplate="<b>%{y}</b><br>Сума: %{x:,.0f}<extra></extra>",
-            ))
-            fig_p.update_layout(height=500, margin=dict(l=150), showlegend=False,
-                                 xaxis_tickformat=",.0f")
-            st.plotly_chart(fig_p, use_container_width=True)
-
-        st.divider()
-        st.write("**💧 Водопад витрат — ТОП-10 типів**")
-        top10 = (
-            filtered_df.groupby("Type_of_expense")["Sum"]
-                        .sum().nlargest(10).sort_values()
-        )
-        fig_wf = go.Figure(go.Waterfall(
-            x=top10.index, y=top10.values,
-            connector={"line": {"color": "rgba(63,63,63,0.5)"}},
-            increasing={"marker": {"color": "#d62728"}},
-            totals={"marker": {"color": "#1f77b4"}},
-            text=[fmt(v) for v in top10.values],
-            textposition="outside",
-            hovertemplate="<b>%{x}</b><br>Сума: %{y:,.0f}<extra></extra>",
-        ))
-        fig_wf.update_layout(height=450, xaxis_tickangle=45, margin=dict(b=150))
-        st.plotly_chart(fig_wf, use_container_width=True)
-
-# ── TAB 8: Аналітика ──────────────────────────────────────
-with tab8:
-    st.subheader("🔍 Аналітика та цікаві розрахунки")
-    if not filtered_df.empty:
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.write("**📊 Розподіл витрат по типах:**")
-            dist_data = (
-                filtered_df.groupby("DistributionBase")["Sum"]
-                            .sum().sort_values(ascending=False)
-            )
-            dist_total = dist_data.sum()
-            for k, v in dist_data.items():
-                st.write(f"{k}: **{v:,.0f}** ({v/dist_total*100:.1f}%)")
-
-        with col2:
-            st.write("**🏢 ТОП-5 відділів:**")
-            dept5 = (
-                filtered_df.groupby("Department")["Sum"]
-                            .sum().nlargest(5)
-            )
-            dept5_total = dept5.sum()
-            for k, v in dept5.items():
-                st.write(f"{str(k)[:28]}: **{fmt(v)}** ({v/dept5_total*100:.1f}%)")
-
-        st.divider()
-        col3, col4 = st.columns(2)
-
-        with col3:
-            st.write("**💼 Середня сума по топ-8 типах витрат:**")
-            avg_type = (
-                filtered_df.groupby("Type_of_expense")["Sum"]
-                            .agg(["mean", "count"])
-                            .sort_values("mean", ascending=False).head(8)
-            )
-            for idx, row in avg_type.iterrows():
-                st.write(f"{str(idx)[:30]}: **{fmt(row['mean'])}** (n={int(row['count'])})")
-
-        with col4:
-            st.write("**📈 Аналіз Парето (правило 80/20):**")
-            srt = filtered_df.sort_values("Sum", ascending=False)
-            cumsum_pct = (srt["Sum"].cumsum() / srt["Sum"].sum() * 100).values
-            idx_80 = next((i for i, x in enumerate(cumsum_pct) if x >= 80),
-                          len(cumsum_pct) - 1)
-            pct_20 = (idx_80 + 1) / len(srt) * 100
-
-            st.write(f"80% витрат дають **{idx_80+1}** операцій з {len(srt)}")
-            st.write(f"Це **{pct_20:.1f}%** від усіх операцій")
-            level = "🔴 Висока" if pct_20 < 5 else ("🟡 Середня" if pct_20 < 15 else "🟢 Низька")
-            st.write(f"Концентрація: {level}")
-
-        st.divider()
-
-        dist_chart = (
-            filtered_df.groupby("DistributionBase")["Sum"]
-                        .sum().sort_values(ascending=False)
-        )
-        fig = px.bar(
-            x=dist_chart.index, y=dist_chart.values,
-            color=dist_chart.values, color_continuous_scale="Viridis",
-            labels={"x": "Тип розподілу", "y": "Сума"},
-            title="Розподіл витрат за базою розподілу",
-        )
-        fig.update_layout(coloraxis_showscale=False, yaxis_tickformat=",.0f")
-        st.plotly_chart(fig, use_container_width=True)
-
-# ============================================================
-st.divider()
-st.caption(f"🕐 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+# ── Футер ─────────────────────────────────────────────────
+st.markdown(
+    f"<p style='text-align:right;font-size:11px;color:#aaa;margin-top:10px;'>"
+    f"🕐 Останнє оновлення: {datetime.now().strftime('%d.%m.%Y о %H:%M:%S')}</p>",
+    unsafe_allow_html=True,
+)
 

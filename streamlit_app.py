@@ -163,7 +163,7 @@ def check_password() -> bool:
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         st.markdown(
-            "<h1 style='text-align:center'>🔐 Доступ захищений</h1>"
+            
             "<p style='text-align:center;color:gray'>Введіть пароль для входу</p>",
             unsafe_allow_html=True,
         )

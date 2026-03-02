@@ -732,7 +732,7 @@ with tab_top:
 
 # ── Футер ─────────────────────────────────────────────────
 st.markdown(
-    f"<p style='text-align:right;font-size:11px;color:#aaa;margin-top:10px;'>"
+    f"<p style='text-align:right;font-size:11px;color:#aaa;margin-top:10px;'>",
     unsafe_allow_html=True,
 )
 
